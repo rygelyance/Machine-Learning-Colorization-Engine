@@ -6,10 +6,16 @@ from torchvision import transforms
 from PIL import Image
 from skimage import color
 from torch import nn, optim
+from tqdm import tqdm  # Importing tqdm for the progress bar
 
 print(torch.__version__)
-print(torch.cuda.is_available())
+print("CUDA available:", torch.cuda.is_available())
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Print the GPU's name if CUDA is available
+if torch.cuda.is_available():
+    print("Using GPU:", torch.cuda.get_device_name(device))
 
 # ======= Model Definition =======
 class UNetColorization(nn.Module):
@@ -21,8 +27,6 @@ class UNetColorization(nn.Module):
             return nn.Sequential(
                 nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1),
-                nn.ReLU(inplace=True),
             )
 
         # -------- Encoder (Downsampling path) --------
@@ -30,15 +34,16 @@ class UNetColorization(nn.Module):
         self.pool1 = nn.MaxPool2d(2)
         self.enc2 = conv_block(64, 128)
         self.pool2 = nn.MaxPool2d(2)
-        self.enc3 = conv_block(128, 256)
-        self.pool3 = nn.MaxPool2d(2)
+        # self.enc3 = conv_block(128, 256)
+        # self.pool3 = nn.MaxPool2d(2)
 
         # -------- Bottleneck --------
-        self.bottleneck = conv_block(256, 512)
+        # self.bottleneck = conv_block(256, 512)
+        self.bottleneck = conv_block(128, 256)
 
         # -------- Decoder (Upsampling path) --------
-        self.up3 = nn.ConvTranspose2d(512, 256, 2, stride=2)
-        self.dec3 = conv_block(512, 256)
+        # self.up3 = nn.ConvTranspose2d(512, 256, 2, stride=2)
+        # self.dec3 = conv_block(512, 256)
         self.up2 = nn.ConvTranspose2d(256, 128, 2, stride=2)
         self.dec2 = conv_block(256, 128)
         self.up1 = nn.ConvTranspose2d(128, 64, 2, stride=2)
@@ -50,13 +55,13 @@ class UNetColorization(nn.Module):
     def forward(self, x):
         e1 = self.enc1(x)
         e2 = self.enc2(self.pool1(e1))
-        e3 = self.enc3(self.pool2(e2))
+        # e3 = self.enc3(self.pool2(e2))
 
-        b = self.bottleneck(self.pool3(e3))
+        b = self.bottleneck(self.pool2(e2))
 
-        d3 = self.up3(b)
-        d3 = self.dec3(torch.cat([d3, e3], dim=1))
-        d2 = self.up2(d3)
+        # d3 = self.up3(b)
+        # d3 = self.dec3(torch.cat([d3, e3], dim=1))
+        d2 = self.up2(b)
         d2 = self.dec2(torch.cat([d2, e2], dim=1))
         d1 = self.up1(d2)
         d1 = self.dec1(torch.cat([d1, e1], dim=1))
@@ -89,17 +94,19 @@ class CocoColorizationDataset(Dataset):
             ab = self.transform(ab)
 
         return torch.tensor(L).permute(2, 0, 1), torch.tensor(ab).permute(2, 0, 1)
-    
+
 # ======= Training Function =======
 def train(model, dataloader, epochs=10, lr=1e-3):
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.MSELoss() # Possibly try SmoothL1Loss or other functions??
-
+    criterion = nn.MSELoss()  # Possibly try SmoothL1Loss or other functions??
+    
     for epoch in range(epochs):
-        print(f"Training Epoch {epoch}")
+        print(f"Training Epoch {epoch+1}/{epochs}")
         total_loss = 0
-        for L, ab in dataloader:
+        
+        # Wrap the dataloader with tqdm for the progress bar
+        for L, ab in tqdm(dataloader, desc=f"Epoch {epoch+1}", leave=False):
             L, ab = L.cuda(device), ab.cuda(device)
             pred_ab = model(L)
             loss = criterion(pred_ab, ab)
@@ -108,7 +115,7 @@ def train(model, dataloader, epochs=10, lr=1e-3):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-
+        
         print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/len(dataloader):.4f}")
 
 # ======= Entry Point =======

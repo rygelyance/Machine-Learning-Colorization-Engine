@@ -6,128 +6,110 @@ from torchvision import transforms
 from PIL import Image
 from skimage import color
 from torch import nn, optim
-from tqdm import tqdm  # Importing tqdm for the progress bar
-
-print(torch.__version__)
-print("CUDA available:", torch.cuda.is_available())
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Print the GPU's name if CUDA is available
-if torch.cuda.is_available():
-    print("Using GPU:", torch.cuda.get_device_name(device))
+from tqdm import tqdm  # Progress bar
 
 # ======= Model Definition =======
-# Reduced version of the model
 class UNetColorization(nn.Module):
     def __init__(self):
-        super(UNetColorization, self).__init__()
-
-        # Helper function to define a double convolutional block (Conv → ReLU → Conv → ReLU)
+        super().__init__()
         def conv_block(in_ch, out_ch):
             return nn.Sequential(
                 nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1),
                 nn.BatchNorm2d(out_ch),
                 nn.ReLU(inplace=True),
             )
-
-        # -------- Encoder (Downsampling path) --------
         self.enc1 = conv_block(1, 32)
         self.pool1 = nn.MaxPool2d(2)
         self.enc2 = conv_block(32, 64)
         self.pool2 = nn.MaxPool2d(2)
-
-        # -------- Bottleneck --------
         self.bottleneck = conv_block(64, 128)
-
-        # -------- Decoder (Upsampling path) --------
         self.up2 = nn.ConvTranspose2d(128, 64, 2, stride=2)
         self.dec2 = conv_block(128, 64)
         self.up1 = nn.ConvTranspose2d(64, 32, 2, stride=2)
         self.dec1 = conv_block(64, 32)
-
-        # Final output layer: map 32 features → 2 channels (ab color space)
         self.final = nn.Conv2d(32, 2, kernel_size=1)
         self.final_activation = nn.Tanh()
 
     def forward(self, x):
         e1 = self.enc1(x)
         e2 = self.enc2(self.pool1(e1))
-
         b = self.bottleneck(self.pool2(e2))
-
         d2 = self.up2(b)
         d2 = self.dec2(torch.cat([d2, e2], dim=1))
         d1 = self.up1(d2)
         d1 = self.dec1(torch.cat([d1, e1], dim=1))
-
-        a = self.final(d1)
-        out = self.final_activation(a)
+        out = self.final_activation(self.final(d1))
         return out
 
 # ======= Dataset Class =======
 class CocoColorizationDataset(Dataset):
     def __init__(self, root_dir, transform=None):
         self.root_dir = root_dir
-        self.image_paths = [os.path.join(root_dir, img) for img in os.listdir(root_dir) if img.endswith('.jpg')]
+        self.image_paths = [os.path.join(root_dir, f) for f in os.listdir(root_dir)
+                            if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
         self.transform = transform
 
     def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        img_path = self.image_paths[idx]
-        img = Image.open(img_path).convert('RGB').resize((256, 256))
+        img = Image.open(self.image_paths[idx]).convert('RGB').resize((256, 256))
         img_np = np.array(img) / 255.0
-
-        # Convert RGB to LAB
         lab = color.rgb2lab(img_np).astype("float32")
-        L = lab[:, :, 0:1] / 50.0 - 1.0       # Normalize to [-1, 1]
-        ab = lab[:, :, 1:] / 128.0            # Normalize to [-1, 1]
-
+        L = lab[:, :, 0:1] / 50.0 - 1.0
+        ab = lab[:, :, 1:] / 128.0
         if self.transform:
             L = self.transform(L)
             ab = self.transform(ab)
-
-        return torch.tensor(L).permute(2, 0, 1), torch.tensor(ab).permute(2, 0, 1)
+        return torch.from_numpy(L).permute(2, 0, 1), torch.from_numpy(ab).permute(2, 0, 1)
 
 # ======= Training Function =======
 def train(model, dataloader, epochs=10, lr=1e-3):
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
-    
     for epoch in range(epochs):
-        print(f"Training Epoch {epoch+1}/{epochs}")
-        total_loss = 0
-        
-        # Wrap the dataloader with tqdm for the progress bar
-        for L, ab in tqdm(dataloader, desc=f"Epoch {epoch+1}", leave=False):
-            L, ab = L.cuda(device), ab.cuda(device)
+        print(f"Epoch {epoch+1}/{epochs}")
+        total_loss = 0.0
+        for L, ab in tqdm(dataloader, desc=f"Training {epoch+1}", leave=False):
+            L, ab = L.to(device), ab.to(device)
+            optimizer.zero_grad()
             pred_ab = model(L)
             loss = criterion(pred_ab, ab)
-
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-        
-        print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/len(dataloader):.4f}")
+        print(f"  Loss: {total_loss/len(dataloader):.4f}")
 
 # ======= Entry Point =======
 if __name__ == "__main__":
-    print("Torch version:", torch.__version__)
-    print("CUDA available:", torch.cuda.is_available())
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
 
-    # Initialize dataset (Utilizing 5000 images from the 2017 Tiny COCO Subset)
+    # Prepare data
     dataset = CocoColorizationDataset(root_dir='COCO_Images/val2017')
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
-    # Model setup
+    # Initialize model
     model = UNetColorization().to(device)
 
-    # Train model
-    train(model, dataloader, epochs=5)
+    # TorchScript compile before training and print
+    example_input = torch.randn(1, 1, 256, 256).to(device)
+    traced = torch.jit.trace(model, example_input)
+    print("Compiled TorchScript Model:\n", traced)
 
-    # Save trained model
-    torch.save(model.state_dict(), "colorization_model_2.pth")
+    # Train model
+    train(model, dataloader, epochs=1, lr=1e-3)
+
+    # Save model with incrementing filename
+    def get_next_model_filename(base="model", ext=".pt"):
+        i = 1
+        while os.path.exists(f"{base}_{i}{ext}"):
+            i += 1
+        return f"{base}_{i}{ext}"
+
+    model.eval()
+    scripted = torch.jit.script(model)
+    filename = get_next_model_filename()
+    scripted.save(filename)
+    print(f"Saved TorchScript model to {filename}")

@@ -10,7 +10,7 @@ from colorization_training import UNetColorization
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = UNetColorization().to(device)
-model.load_state_dict(torch.load("colorization_model.pth", map_location=device))
+model.load_state_dict(torch.load("colorization_model_2.pth", map_location=device))
 model.eval()
 
 # ======= Preprocess Grayscale Image =======
@@ -29,10 +29,10 @@ def postprocess_output(L_orig, ab_pred):
     ab_pred *= 128.0
 
     # Post-processing result to artificially boost saturation (the band-aid fix)
-    ab_pred *= 1.8
+    # ab_pred *= 1.8
 
     # Shift color temperature: decrease 'b' (yellow → blue), optionally 'a' (red → green) (the other band-aid fix)
-    ab_pred[:, :, 1] -= 5  # Shift toward blue
+    # ab_pred[:, :, 1] -= 5  # Shift toward blue
     # ab_pred[:, :, 0] += 5  # Uncomment to adjust red/green
 
     L_orig = L_orig.astype("float32")

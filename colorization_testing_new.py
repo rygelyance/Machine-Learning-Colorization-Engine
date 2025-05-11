@@ -26,15 +26,14 @@ def preprocess_grayscale_image(img_path):
     return L_tensor, lab[:, :, 0]
 
 # ======= Postprocess Output =======
-def postprocess_output(L_orig, ab_pred, boost_saturation=True, shift_b=False, shift_a=False):
+def postprocess_output(L_orig, ab_pred):
     # ab_pred from TorchScript model
     ab = ab_pred[0].cpu().numpy().transpose(1, 2, 0) * 128.0
-    if boost_saturation:
-        ab *= 1.8
-    if shift_b:
-        ab[:, :, 1] -= 5
-    if shift_a:
-        ab[:, :, 0] += 5
+
+    # ab *= 2
+    # ab[:, :, 1] -= 5
+    # ab[:, :, 0] += 5
+
     lab = np.concatenate((L_orig[:, :, np.newaxis].astype("float32"), ab), axis=2)
     rgb = color.lab2rgb(lab)
     return np.clip(rgb, 0, 1)

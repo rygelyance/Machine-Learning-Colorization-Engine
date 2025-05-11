@@ -26,7 +26,7 @@ def preprocess_grayscale_image(img_path):
     return L_tensor, lab[:, :, 0]
 
 # ======= Postprocess Output =======
-def postprocess_output(L_orig, ab_pred, boost_saturation=False, shift_b=False, shift_a=False):
+def postprocess_output(L_orig, ab_pred, boost_saturation=True, shift_b=False, shift_a=False):
     # ab_pred from TorchScript model
     ab = ab_pred[0].cpu().numpy().transpose(1, 2, 0) * 128.0
     if boost_saturation:

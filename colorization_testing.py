@@ -14,6 +14,8 @@ print("Using device:", device)
 # Model Directory:
 # model_1.pt - Trained on 5K images from COCO, 5 epochs
 # model_2.pt - Trained on 1,668 images of people from Kaggle dataset, 5 epochs
+# old_model_2 - same training as model_1, has 4th convolutional layer
+# old_model_3 - same training as model_1, has 5th convolutional layer
 MODEL_NUMBER = 1
 scripted_model = torch.jit.load(f"model_{MODEL_NUMBER}.pt", map_location=device)
 scripted_model.eval()

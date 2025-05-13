@@ -44,8 +44,10 @@ def postprocess_output(L_orig, ab_pred, orig_size):
     ab = ab_pred[0].cpu().numpy().transpose(1, 2, 0) * 128.0
 
     # Saturation and color temp adjustments
-    ab *= 2
-    ab[:, :, 1] -= 10
+    # Use saturation factor of 2 and color temp of -10 on blue/yellow with model 1
+    # Use saturation factor of 1.6 and no color temp adjustment on models 2/3.
+    ab *= 1.6
+    # ab[:, :, 1] -= 10
     # ab[:, :, 0] += 5
     
     # Resize ab channels to match original image resolution

@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     # Prepare data
     #dataset = CocoColorizationDataset(root_dir='COCO_Images/val2017')
-    dataset = CocoColorizationDataset(root_dir='Human_Images')
+    dataset = CocoColorizationDataset(root_dir='Landscape_Images')
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
     # Initialize model

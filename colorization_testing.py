@@ -14,7 +14,8 @@ print("Using device:", device)
 # Model Directory:
 # model_1.pt - Trained on 5K images from COCO, 5 epochs
 # model_2.pt - Trained on 1,668 images of people from Kaggle dataset, 5 epochs
-MODEL_NUMBER = 1
+# model_3.pt - Trained on 4,300 images of landscapes from Kaggle dataset, 5 epochs
+MODEL_NUMBER = 3
 scripted_model = torch.jit.load(f"model_{MODEL_NUMBER}.pt", map_location=device)
 scripted_model.eval()
 
@@ -41,8 +42,10 @@ def preprocess_grayscale_image(img_path):
 def postprocess_output(L_orig, ab_pred, orig_size):
     # ab_pred from TorchScript model
     ab = ab_pred[0].cpu().numpy().transpose(1, 2, 0) * 128.0
-    ab *= 2
-    ab[:, :, 1] -= 10
+
+    # Saturation and color temp adjustments
+    ab *= 1.6
+    # ab[:, :, 1] -= 10
     # ab[:, :, 0] += 5
 
     lab = np.concatenate((L_orig[:, :, np.newaxis].astype("float32"), ab), axis=2)
@@ -92,7 +95,7 @@ def colorize_image(img_path, save=False, save_path=None):
 
 # ======= Test Images Directory =======
 # Test_Images of Landscapes and Whatnot, Human_Test_Images of human subjects from stock photos
-test_images_dir = "Test_Images"
+test_images_dir = "Landscape_Test_Images"
 
 # Get all image file paths in the directory
 test_images = [os.path.join(test_images_dir, fname)

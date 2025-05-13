@@ -15,7 +15,7 @@ print("Using device:", device)
 # model_1.pt - Trained on 5K images from COCO, 5 epochs
 # model_2.pt - Trained on 1,668 images of people from Kaggle dataset, 5 epochs
 # model_3.pt - Trained on 4,300 images of landscapes from Kaggle dataset, 5 epochs
-MODEL_NUMBER = 3
+MODEL_NUMBER = 1
 scripted_model = torch.jit.load(f"model_{MODEL_NUMBER}.pt", map_location=device)
 scripted_model.eval()
 
@@ -44,36 +44,44 @@ def postprocess_output(L_orig, ab_pred, orig_size):
     ab = ab_pred[0].cpu().numpy().transpose(1, 2, 0) * 128.0
 
     # Saturation and color temp adjustments
-    ab *= 1.6
-    # ab[:, :, 1] -= 10
+    ab *= 2
+    ab[:, :, 1] -= 10
     # ab[:, :, 0] += 5
+    
+    # Resize ab channels to match original image resolution
+    h, w = orig_size[1], orig_size[0]
+    ab_upscaled = resize(ab, (h, w), mode='reflect', anti_aliasing=True)
 
-    lab = np.concatenate((L_orig[:, :, np.newaxis].astype("float32"), ab), axis=2)
+    # Combine high-res L channel and upscaled ab
+    lab = np.concatenate((L_orig[:, :, np.newaxis].astype("float32"), ab_upscaled), axis=2)
+
+    # Convert LAB to RGB
     rgb = color.lab2rgb(lab)
     rgb_clipped = np.clip(rgb, 0, 1)
 
-    # Resize back to original image size (width, height)
-    h, w = orig_size[1], orig_size[0]
-    rgb_upscaled = resize(rgb_clipped, (h, w), mode='reflect', anti_aliasing=True)
-
-    return rgb_upscaled
+    return rgb_clipped
 
 # ======= Run Inference and Display =======
 def colorize_image(img_path, save=False, save_path=None):
     L_tensor, L_orig, orig_size = preprocess_grayscale_image(img_path)
     with torch.no_grad():
         ab_pred = scripted_model(L_tensor)
-    rgb_result = postprocess_output(L_orig, ab_pred, orig_size)
+    
+    # Use original grayscale image for comparision and maintaining resolution detail
+    img = Image.open(img_path).convert('RGB')
+    img_np = np.array(img) / 255.0
+    lab = color.rgb2lab(img_np).astype("float32")
+    L = lab[:, :, 0]
+    
+    rgb_result = postprocess_output(L, ab_pred, orig_size)
 
-    # Resize grayscale L_orig to original size for comparision
-    L_resized = resize(L_orig, (orig_size[1], orig_size[0]), mode='reflect', anti_aliasing=True)
-
+    
 
     # Plot the grayscale, colorized, and original images
     plt.figure(figsize=(15, 5))  # Wider to fit three images
     plt.subplot(1, 3, 1)
     plt.title("Grayscale Input")
-    plt.imshow(L_resized, cmap='gray')
+    plt.imshow(L, cmap='gray')
     plt.axis('off')
 
     plt.subplot(1, 3, 2)
@@ -95,7 +103,7 @@ def colorize_image(img_path, save=False, save_path=None):
 
 # ======= Test Images Directory =======
 # Test_Images of Landscapes and Whatnot, Human_Test_Images of human subjects from stock photos
-test_images_dir = "Landscape_Test_Images"
+test_images_dir = "Test_Images"
 
 # Get all image file paths in the directory
 test_images = [os.path.join(test_images_dir, fname)

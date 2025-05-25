@@ -57,11 +57,11 @@ Predicted A/B channels are upscaled, recombined with the L channel, and converte
 ### 4.1 Landscapes
 
 **Results:**  
-_![Landscape Input](Figures/landscape1.png)_
-_![Landscape Input](Figures/landscape2.png)_
-_![Landscape Input](Figures/landscape3.png)_
-_![Landscape Input](Figures/landscape4.png)_
-_![Landscape Input](Figures/landscape6.png)_
+_![Landscape Input](Figures/Landscape1.png)_
+_![Landscape Input](Figures/Landscape2.png)_
+_![Landscape Input](Figures/Landscape3.png)_
+_![Landscape Input](Figures/Landscape4.png)_
+_![Landscape Input](Figures/Landscape6.png)_
 
 ### 4.2 People
 

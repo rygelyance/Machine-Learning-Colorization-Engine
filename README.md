@@ -1,4 +1,4 @@
-# Machine Learning Image Colorization Engine
+# Machine Learning Image Colorization Engine (CMSC 426 Final Project)
 
 **Authors:** Rygel Yance, Daniel Pitzele, Minsi Hu  
 **Affiliation:** University of Maryland, College Park  

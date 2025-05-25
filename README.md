@@ -2,7 +2,6 @@
 
 **Authors:** Rygel Yance, Daniel Pitzele, Minsi Hu  
 **Affiliation:** University of Maryland, College Park  
-**GitHub Repository:** [Project Link](https://github.com/rygelyance/Machine-Learning-Colorization-Engine)
 
 ---
 

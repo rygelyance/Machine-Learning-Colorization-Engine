@@ -36,7 +36,7 @@ The model uses convolutional blocks, residual connections, and upsampling via tr
 **Architecture Overview:**
 
 > **Architecture Diagram:**  
-> _![Insert architecture diagram here](path/to/architecture_diagram.png)_
+> _![Insert architecture diagram here](Figures/Architecture.png)_
 
 ### 2.2 Post-Processing
 
@@ -56,27 +56,30 @@ Predicted A/B channels are upscaled, recombined with the L channel, and converte
 
 ### 4.1 Landscapes
 
-**Input:**  
-_![Landscape Input](path/to/landscape_input.jpg)_
-
-**Output:**  
-_![Landscape Output](path/to/landscape_output.jpg)_
+**Results:**  
+_![Landscape Input](Figures/landscape1.png)_
+_![Landscape Input](Figures/landscape2.png)_
+_![Landscape Input](Figures/landscape3.png)_
+_![Landscape Input](Figures/landscape4.png)_
+_![Landscape Input](Figures/landscape6.png)_
 
 ### 4.2 People
 
-**Input:**  
-_![People Input](path/to/people_input.jpg)_
+**Results:**  
+_![People Input](Figures/Human1.png)_
+_![People Input](Figures/Human2.png)_
+_![People Input](Figures/Human5.png)_
+_![People Input](Figures/Human6.png)_
+_![People Input](Figures/Human7.png)_
 
-**Output:**  
-_![People Output](path/to/people_output.jpg)_
 
 ### 4.3 General Images
 
-**Input:**  
-_![General Input](path/to/general_input.jpg)_
-
-**Output:**  
-_![General Output](path/to/general_output.jpg)_
+**Results:**  
+_![General Input](Figures/Figure1.png)_
+_![General Input](Figures/Figure2.png)_
+_![General Input](Figures/Figure3.png)_
+_![General Input](Figures/Figure4.png)_
 
 ---
 
@@ -107,16 +110,7 @@ _![General Output](path/to/general_output.jpg)_
 
 ---
 
-## 8. Team Contributions
-
-All members contributed equally to:
-- Model design, training, and testing
-- Report writing
-- Video editing and narration
-
----
-
-## 9. References
+## 8. References
 
 1. Kumar et al., 2021 – [Colorization Transformer](https://arxiv.org/abs/2102.04432)  
 2. Ballester et al., 2022 – [Analysis of Losses](https://arxiv.org/abs/2204.02980)  
